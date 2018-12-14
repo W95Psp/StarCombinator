@@ -1,4 +1,4 @@
-module ParserCombinators
+module StarCombinator
 
 open FStar.String
 open FStar.Char
@@ -110,11 +110,7 @@ let match_letter = match_class letterList id
 
 let match_word = repeat match_letter string_of_list
 
-private
-let uncurry f x = let (l,r) = x in f l r
-private
-let uncurry3 f x = let ((a,b),c) = x in f a b c
-private
+(* delayMe makes a parser act "lazy", then you can define recursive parsers (hopefully!) *)
 let delayMe #a (p: unit -> parser a): parser a = fun a b -> (p ()) a b
 
 let (<*>>) a b = sequence a b (fun _ b -> b)
@@ -143,7 +139,6 @@ let match_maybe #a (p:parser a): parser (option a) = fun src pos -> match p src 
 
 let match_comments: parser (option (list string)) = match_maybe (repeat match_comment (fun l -> l))
 
-private
 let match_list #a (left:string) (right:string) (inner: parser a): parser (list a)
     = wrapspace (match_keyword left <*>> (
                             (fp (fun (x, l) -> x :: l)
