@@ -7,68 +7,14 @@ module M = FStar.Mul
 module L = FStar.List.Tot.Base
 module T = FStar.Tactics
 
-let lowerCaseCharList = list_of_string "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-let upperCaseCharList = list_of_string "abcdefghijklmnopqrstuvwxyz"
-let digitList = list_of_string "1234567890"
-let isSpecialChar = list_of_string "~@#$%^?!+-*<>\\/|&=:"
+//include StarCombinator.Constants
+include StarCombinator.Core
+include StarCombinator.Base
 
-(** Parsing a string might give a result (for instance a number, for a number parser), along with a position (i.e. where the parser stopped). It might also result in nothing (parsing "z" with a number parser would make nothing) **)
-type parserResult a = | ParserRes : nat -> a -> parserResult a | NoRes
+(* delayMe makes a parser act "lazy", then you can define recursive parsers (hopefully!) *)
+let delayMe #a (p: unit -> parser a): parser a = fun a b -> (p ()) a b
 
-(** A parser operates on a string which might have be already partially consumed: therefore, a parser takes the source string and a position **)
-type parser a = string -> nat -> parserResult a
-
-(** Identity for parsers, in a sense **)
-let match_empty #a (symb: a) : parser a = fun _ pos -> ParserRes pos symb
-
-(** if ch is matched, it output symb  **)
-let match_char #a (symb: a) (ch: char) : parser a
-    = fun src pos -> if pos >= FStar.String.length src then NoRes
-                      else (
-                         if get src pos = ch then ParserRes (pos+1) symb
-                         else                     NoRes
-                      )
-
-(* if the next character ch satisfyies the predicate f, succeeds with ch *)                        
-let match_charf (f: char -> bool) : parser char
-  = fun src pos -> if pos >= FStar.String.length src then NoRes
-                else (let ch = get src pos in
-                      if f ch then  ParserRes (pos+1) ch 
-                      else    NoRes
-                )
-
-private
-let bind x f = match x with | ParserRes a b -> f (a, b) | _ -> NoRes
-
-let map_pr x f = x <-- x; let (p, r) = x in ParserRes p (f r)
-
-private
-let fst' #a (x: parserResult a{ParserRes? x}) = match x with | ParserRes a _ -> a
-
-private
-let ( @ ) #a #b #c (g:b->c) (f:a->b) (v:a) = g (f v)
-
-let comb_or #a #b #c (p_a: parser a) (p_b: parser b) (f: (either a b) -> c) : parser c = fun src pos -> 
-  let r_a = p_a src pos in
-  let r_b = p_b src pos in
-  match (r_a, r_b) with
-    | (NoRes, NoRes) -> NoRes
-    | (value, NoRes) -> map_pr value (f @ Inl)
-    | (NoRes, value) -> map_pr value (f @ Inr)
-    | (val0 , val1 ) -> if (fst' val0) > (fst' val1) then
-                            map_pr val0 (f @ Inl)           
-                       else map_pr val1 (f @ Inr)
-
-private
-let rec repeat' #a (p_a: parser a) (acc:list a) src pos = 
-  match p_a src pos with
-    | ParserRes p v -> admitP (p << p); repeat' p_a (L.append acc [v]) src p
-    | NoRes -> ParserRes pos acc
-
-let repeat #a #b (p_a: parser a) (f: list a -> b) : parser b = fun src pos -> match repeat' p_a [] src pos with
-    | ParserRes p v -> ParserRes p (f v)
-    | NoRes -> NoRes
-
+(*
 let match_stringf (f: char -> bool) : parser string = repeat (match_charf f) string_of_list
 
 let sequence #a #b #c (p_a: parser a) (p_b: parser b) (f: a -> b -> c) : parser c = fun src pos ->
@@ -110,11 +56,6 @@ let match_letter = match_class letterList id
 
 let match_word = repeat match_letter string_of_list
 
-(* delayMe makes a parser act "lazy", then you can define recursive parsers (hopefully!) *)
-let delayMe #a (p: unit -> parser a): parser a = fun a b -> (p ()) a b
-
-let (<*>>) a b = sequence a b (fun _ b -> b)
-let (<<*>) a b = sequence a b (fun a _ -> a)
 
 let match_space = match_class [' ';'\t';'\n';'\r'] (fun _ -> ())
 let match_any_spaces = repeat match_space (fun _ -> ())
@@ -160,3 +101,4 @@ let close_parser parser src = match (parser <<*> match_eof) src 0 with
   | ParserRes _ res -> Some res
   | NoRes -> None
   
+*)
