@@ -126,21 +126,23 @@ let hFunction ((str,args),body) = LFakeInstrFunDef (FunFakeDef str args body)
 
 let lFakeInstr_parser: parser (r:lFakeInstr) =
    let z #a (arg:parser a) = arg  in
-   let rec no_rec (tl:bool): parser (r:lFakeInstr) = admitP (() << ()); let nr tl = delayMe (fun () -> no_rec tl) in z (
+   let rec no_rec (tl:bool): parser (r:lFakeInstr) =
+       admitP (() << ()); let nr = delayMe (h' false) in
+   z (
        ( hIf @<<
          (((keyword "if" <*> operator "(") <*>> bexp_parser <<*> (operator ")" <*> operator "{")) <*>
-           (nr false <<*> (operator "}" <*> keyword "else" <*> operator "{")) <*>
-           (nr false <<*> operator "}"))
+           (nr <<*> (operator "}" <*> keyword "else" <*> operator "{")) <*>
+           (nr <<*> operator "}"))
        )
    <|> ( hWhile @<< (
                 ((keyword "while" <*> operator "(") <*>> bexp_parser <<*> (operator ")" <*> operator "{"))
-            <*> (nr false <<*> operator "}")
+            <*> (nr <<*> operator "}")
             )
        )
    <|> ( hFunction @<< (
                    (operator "function" <*>> word)
                <*> (match_list "(" ")" "," word <<*> operator "{")
-               <*> (nr false <<*> operator "}")
+               <*> (nr <<*> operator "}")
                )
        )
    <|> (LFakeInstrSkip *<< operator "SKIP")
