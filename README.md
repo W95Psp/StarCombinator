@@ -16,7 +16,7 @@ open StarCombinator
 - `keyword "hey"` match `"hey"` and ensure there is no letter after or before it
 - `notFollowedBy` `lookAhead`
 - `delayMe p` with `p: () -> parser t` (for some type `t`) makes a parser behave as a lazy function: then you can write stuff like `let myParser () = (number <*>> keyword "+") <<*> maybe (delayMe myParser)`
-- suppose `p: parser t`, then `f @<< p` (with `f: t -> u`) is of type `parser u`: it maps the output of `p` using `f`. For instance: 
+- suppose `p: parser t`, then `f @<< p` (with `f: t -> u`) is of type `parser u`: it maps the output of `p` using `f`. For instance here is a parser for any number of additions (i.e. `10 + 30 + 2`, `6 + 36` or `42`): 
 
 ```
 let myParser (): parser int
