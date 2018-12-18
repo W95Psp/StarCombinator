@@ -3,6 +3,13 @@ module StarCombinator.Helpers
 private
 let prefix = '\x1b'
 
+let (<$>) #ta #ra (f: ta -> ra) a: option ra = match a with | Some a -> Some (f a) | None -> None
+let (<*>) #ta #ra (f: option (ta -> ra)) (a: option ta): option ra = match f with | Some f -> f <$> a | None -> None 
+let max x y = if x > y then x else y
+
+
+let rec lst_contains (#a:eqtype)  (x: a) (l: list a) = match l with
+  | [] -> false | h::t -> x = h || lst_contains x t
 
 
 let cstHEADER = "\x1b[95m"

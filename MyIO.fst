@@ -30,6 +30,10 @@ assume val mi_file_exists : string -> ML bool
 
 assume val mi_fail: string -> Tot bool
 
+assume val make_ml_pure: (f: unit -> ML unit) -> (unit -> Tot bool)
+
+assume val mi_unsafe_now: unit -> int
+
 (* assume val *) 
 
 (*

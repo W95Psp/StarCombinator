@@ -6,44 +6,73 @@ open MyIO
 open FStar.Mul
 open StarCombinator.Examples.While
 
+
+let op_add = (fun x y -> x + y)
+let op_minus = (fun x y -> x - y)
+
 let calculator_parser: parser int = 
     let rec h (_:unit): parser int = (
-      let g = delayMe (admit (); h) in
-          fp (fun (a, b) -> a + b) (number <<*> (keyword "plus" <|> ckwd '+') <*> g)
-      <|> fp (fun (a, b) -> a - b) (number <<*> (keyword "minus"<|> keyword "-") <*> g)
-      <|> fp (fun (a, b) -> a * b) (number <<*> (keywords ["hey";"times"] <|> keyword "*") <*> g)
-      <|> number
+      //let g = number in
+      let g = delayMe (admitP (() << ()); h) in
+      (ptry
+        (
+          (fun ((a, op), b) -> a `op` b) @<<
+          (number <*> (
+                (op_add   *<< ((keyword "+"  <|> keyword "plus") <?> "expected + or plus"))
+              <|> (op_minus *<< ((keyword "minus" <|> keyword "-") <?> "expected - or minus"))
+          ) <*> g)
+        )
+      )<|> number
+      //    fp (fun (a, b) -> a + b) (number <<*> (keyword "plus" <|> ckwd '+') <*> g)
+      //<|> fp (fun (a, b) -> a - b) (number <<*> (keyword "minus"<|> keyword "-") <*> g)
+      //<|> fp (fun (a, b) -> a * b) (number <<*> (keywords ["hey";"times"] <|> keyword "*") <*> g)
+      //<|> number
     //and no_lrec () =
     //       number
     //  <|> (keyword "Bonjour" <*>> number <<*> keywords ["X";"Y";"Z"])
-    ) in h ()
-
+    ) in (h ()) <<*> eof
+    
 let calculator source = match (make calculator_parser) source with
   | Inl intvalue -> "Got some result: " ^ string_of_int intvalue
   | Inr error -> "Got some error: " ^ error
 
-module All = FStar.All
-module S = FStar.String
+// module All = FStar.All
+// module S = FStar.String
 
-let mi_input_lines (): All.ML string =
-  let rec h (): All.ML (list string) =
-    let line = mi_input_line () in
-    if line = "" then [line]
-    else (h ())@[line]
-  in let r = h () in
-  S.concat "\n" r
+// let mi_input_lines (): All.ML string =
+//   let rec h (): All.ML (list string) =
+//     let line = mi_input_line () in
+//     if line = "" then [line]
+//     else (h ())@[line]
+//   in let r = h () in
+//   S.concat "\n" r
 
-let x = make lFakeInstr_parser
+// let x = make lFakeInstr_parser
+//let delayMe #a (p: unit -> parser a): parser a = {description = (fun _ -> "x"); parser_fun = fun sd st0 -> let x = p () in x.parser_fun sd st0}
 
+let rec tiny' () = (
+  fp (fun (l, num) -> string_of_int num ^ "  " ^ String.concat " " (FStar.List.Tot.Base.map (fun (a,b) -> String.string_of_list [a;b]) l)) 
+  (
+    (many (exact_char 'c' <*> (exact_char '!' <|> exact_char 'a'))) <*> number// <<*> (admitP (() << ()); delayMe tiny')
+  )
+)
+let tiny = make (tiny' ())
+ 
 let main0 () = 
+  let prog = mi_input_line () in
+  mi_print_string (match tiny prog with
+    | Inl x -> "Youpi:" ^ x
+    | Inr x -> x)
+  
+let main1 () = 
   let prog = mi_input_line () in
   mi_print_string (match calculator prog with
     | r -> r)
 
-let main1 () = 
-  let prog = mi_input_lines () in
-  mi_print_string (match x prog with
-    | Inl _ -> "Succeeds!"
+let main2 () = 
+  let prog = mi_input_line () in
+  mi_print_string (match (make lFakeInstr_parser) prog with
+    | Inl r -> lFakeInstrToString r
     | Inr r -> r)
 
-let main = main0 ()
+let main = main2 ()

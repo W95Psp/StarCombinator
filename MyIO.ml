@@ -1,4 +1,6 @@
 exception EOF
+
+
 type mi_fd_read = in_channel
 type mi_fd_write = out_channel
 let pr  = Printf.printf
@@ -31,3 +33,10 @@ let mi_file_exists = Sys.file_exists
 let mi_fail s = print_string s; exit 0; false
                    
 let mi_debug_print_string s = print_string s; false
+
+let make_ml_pure = fun f -> let x = f () in true
+
+let mi_unsafe_now = fun _ ->
+  let t = 1000.0 *. (Unix.gettimeofday ()) in
+  let x = int_of_float t in
+  Z.of_int x
