@@ -97,10 +97,13 @@ let match_boolean_litterate = ((fp (fun x -> true) (exact_string "true")) <|> (f
 
 let between l r i = l <*>> i <<*> r
 
-let between_kwd l r i = between (keyword l) (keyword r) i <?> "expected something of the form \""^l^" ... "^r^"\""
+let between_kwd l r i = between (operator l) (operator r) i <?> "expected something of the form \""^l^" ... "^r^"\""
 
 let sepBy1 i s = (fun (v,l) -> v::l) `fp` i <*> (many (s <*> i))
 let sepBy i s = ptry ((fun (v,l) -> v::l) `fp` (i <*> (many (s <*>> i)))) <|> fp (fun x -> [x]) i
 
-let match_list l r s i = between_kwd l r (sepBy i (keyword s)) <?> "expected a list \""^l^" ... "^s^" ... "^r^"\""
+//private
+//let mk_d msg = fun _ -> {message = msg}
+
+let match_list l r s i = between_kwd l r (sepBy i s) <?> "expected a list \""^l^" ... "^(s.description ()).message^" ... "^r^"\""
 

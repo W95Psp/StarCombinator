@@ -124,9 +124,10 @@ let hWhile (cond, body) = LFakeInstrWhile cond body
 let hFunction ((str,args),body) = LFakeInstrFunDef (FunFakeDef str args body)
 
 
-let lFakeInstr_parser: parser (r:lFakeInstr) =
-   let z #a (arg:parser a) = arg <<*> match_comments  in
-   let rec no_rec (tl:bool): parser (r:lFakeInstr) =
+
+let lFakeInstr_parser: parser (r:lFakeInstr {lFakeInstrIsWF r true}) =
+   let z #a (arg:parser a) = arg  in
+   let rec no_rec (tl:bool): parser (r:lFakeInstr {lFakeInstrIsWF r tl}) =
        admitP (() << ()); let nr = delayMe (h' false) in
    z (
        ( hIf @<<
@@ -141,20 +142,20 @@ let lFakeInstr_parser: parser (r:lFakeInstr) =
        )
    <|> ( hFunction @<< (
                    (operator "function" <*>> word)
-               <*> (match_list "(" ")" "," word <<*> operator "{")
+               <*> (match_list "(" ")" (operator ",") word <<*> operator "{")
                <*> (nr <<*> operator "}")
                )
        )
    <|> (LFakeInstrSkip *<< operator "SKIP")
    <|> (hAssign @<< (word <<*> operator "=" <*> (
-             ptry (word <*> match_list "(" ")" "," aexp_parser)
+             ptry (word <*> match_list "(" ")" (operator ",") aexp_parser)
          </> aexp_parser
        )))
    )
-   and h' (tl:bool) (): parser (r:lFakeInstr) = admitP (() << ()); let h = delayMe (h' tl) in z (
+   and h' (tl:bool) (): parser (r:lFakeInstr {lFakeInstrIsWF r tl}) = admitP (() << ()); let h = delayMe (h' tl) in z (
        (fun (s1, s2) -> match s2 with
                      | None    -> s1
                      | Some s2 -> LFakeInstrSeq s1 s2
-       ) @<< (no_rec tl <*> maybe (operator ";" <*>> (match_comments <*>> h)))
+       ) @<< (no_rec tl <*> maybe (operator ";" <*>> h))//(match_comments <*>> h)))
      )
    in wrapspace (h' true ())
