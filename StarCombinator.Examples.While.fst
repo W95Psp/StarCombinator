@@ -125,7 +125,7 @@ let hFunction ((str,args),body) = LFakeInstrFunDef (FunFakeDef str args body)
 
 
 let lFakeInstr_parser: parser (r:lFakeInstr) =
-   let z #a (arg:parser a) = arg  in
+   let z #a (arg:parser a) = arg <<*> match_comments  in
    let rec no_rec (tl:bool): parser (r:lFakeInstr) =
        admitP (() << ()); let nr = delayMe (h' false) in
    z (
@@ -155,6 +155,6 @@ let lFakeInstr_parser: parser (r:lFakeInstr) =
        (fun (s1, s2) -> match s2 with
                      | None    -> s1
                      | Some s2 -> LFakeInstrSeq s1 s2
-       ) @<< (no_rec tl <*> maybe (operator ";" <*>> h))//(match_comments <*>> h)))
+       ) @<< (no_rec tl <*> maybe (operator ";" <*>> (match_comments <*>> h)))
      )
    in wrapspace (h' true ())
