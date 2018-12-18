@@ -23,7 +23,7 @@ let myParser (): parser int
 	= (fun (leftNumber, right) -> match right with
 		| None             -> leftNumber
 		| Some rightNumber -> leftNumber + rightNumber
-	) *<< (
+	) @<< (
 		     (number <*>> keyword "+")
 		<<*> maybe (delayMe myParser)
 	)
