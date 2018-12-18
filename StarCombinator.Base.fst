@@ -55,6 +55,8 @@ let notLetter = (satisfy_char (fun c -> H.lst_contains c C.anyCaseCharList) <|> 
 
 let letter = oneOf C.anyCaseCharList <?> "expected letter"
 
+let specialChars = oneOf C.isSpecialChar <?> "expected letter"
+
 let natural_number : parser nat =
   let rec convert (c:list (n: nat{n <= 9})): nat = match c with
     | [] -> 0
@@ -79,9 +81,13 @@ let string_satisfy (fchar: char -> bool): parser string = fp string_of_list (man
 
 let word: parser string = (string_satisfy (fun c -> H.lst_contains c C.anyCaseCharList) <<*> notFollowedBy letter) <?> "expected a word"
 
-let keyword str: parser unit = fp (fun _ -> ()) (ptry (spaces <*> exact_string str) <*> spaces <<*> notFollowedBy letter) <?> "expected the keyword "^str
+let keyword str: parser unit = fp (fun _ -> ()) (ptry (spaces <*> exact_string str) <<*> notFollowedBy letter <*> spaces) <?> "expected the keyword "^str
 
-let keywords (lstr: list string{lstr<>[]}): parser unit = fp (fun _ -> ()) (sequence #string (admit(); L.map (fun s -> spaces <*>> exact_string s) lstr) <*> spaces) <?> "expected the keywords " ^ (String.concat " " lstr)
+let operator str: parser unit = fp (fun _ -> ()) (ptry (spaces <*> exact_string str) <<*> notFollowedBy specialChars <*> spaces) <?> "expected the operator" ^str
+
+// let keywords (lstr: list string{lstr<>[]}): parser unit = fp (fun _ -> ()) (sequence #string (admit();
+//   L.map (fun s -> spaces <*>> exact_string s) lstr) <*> spaces) <?> "expected the keywords " ^ (String.concat " " lstr)
+
 
 let ckwd ch: parser unit = (spaces <<*> exact ch <<*> spaces) <?> "expected char keyword "^(String.string_of_list [ch])
 

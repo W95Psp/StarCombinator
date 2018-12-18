@@ -77,25 +77,25 @@ let aexp_parser: parser lAExp =
       op_apply @<< (
             no_rec ()
           <*> maybe ((
-                (LAExpPlus *<< keyword "+") <|> (LAExpMinus *<< keyword "-")
-            <|> (LAExpMult *<< keyword "*") <|> (LAExpDiv *<< keyword "/")
+                (LAExpPlus *<< operator "+") <|> (LAExpMinus *<< operator "-")
+            <|> (LAExpMult *<< operator "*") <|> (LAExpDiv *<< operator "/")
           ) <*> h)
         )      
   in wrapspace (h' ())
 
 let bexp_parser: parser lBExp =
   let rec no_rec (): parser lBExp = admitP (() << ()); let nr = delayMe no_rec in
-          (LBExpNot @<< (keyword "~" <*>> nr))
+          (LBExpNot @<< (operator "~" <*>> nr))
       <|> ptry (LBExpLitt true  *<< keyword "true" <|> LBExpLitt false *<< keyword "false")
-      <|> ptry (between (keyword "(") (keyword ")") (delayMe h'))
+      <|> ptry (between (operator "(") (operator ")") (delayMe h'))
       <|> ptry (fp (fun ((l, op), r) -> op l r)
         (aexp_parser <*> (
-           (LBExpEq *<< keyword "==") <|> (LBExpLe *<< keyword "<=")
+           (LBExpEq *<< operator "==") <|> (LBExpLe *<< operator "<=")
         ) <*> aexp_parser))
   and h' (): parser lBExp =   admitP (() << ()); let h = delayMe h' in
           op_apply @<<
           (no_rec () <*> maybe (
-                ((LBExpAnd *<< keyword "&&") <|> (LBExpOr *<< keyword "||"))
+                ((LBExpAnd *<< operator "&&") <|> (LBExpOr *<< operator "||"))
             <*> h
           ))
   in wrapspace (h' ())
@@ -116,7 +116,7 @@ let hAssign (var, eith) = match eith with
     | Inl (fName, args) -> LFakeInstrAssign var (AssignCall fName args)
     | Inr exp -> LFakeInstrAssign var (AssignLAExp exp) 
 
-let match_comment: parser string = spaces <*>> keyword "//" <*>> string_satisfy (fun x -> x <> '\n')
+let match_comment: parser string = spaces <*>> operator "//" <*>> string_satisfy (fun x -> x <> '\n')
 let match_comments: parser (list string) = fp (fun x -> match x with | Some x -> x | None -> []) (maybe (many match_comment))
 
 let hIf ((cond, body0), body1) = LFakeInstrIf cond body0 body1
@@ -125,26 +125,26 @@ let hFunction ((str,args),body) = LFakeInstrFunDef (FunFakeDef str args body)
 
 
 let lFakeInstr_parser: parser (r:lFakeInstr) =
-   let z #a (arg:parser a) = arg <<*> match_comments in
+   let z #a (arg:parser a) = arg  in
    let rec no_rec (tl:bool): parser (r:lFakeInstr) = admitP (() << ()); let nr tl = delayMe (fun () -> no_rec tl) in z (
        ( hIf @<<
-         ((keywords ["if"; "("] <*>> bexp_parser <<*> keywords [")";"{"]) <*>
-           (nr false <<*> keywords ["}";"else";"{"]) <*>
-           (nr false <<*> keyword "}"))
+         (((keyword "if" <*> operator "(") <*>> bexp_parser <<*> (operator ")" <*> operator "{")) <*>
+           (nr false <<*> (operator "}" <*> keyword "else" <*> operator "{")) <*>
+           (nr false <<*> operator "}"))
        )
    <|> ( hWhile @<< (
-                (keywords ["while"; "("] <*>> bexp_parser <<*> keywords [")";"{"])
-            <*> (nr false <<*> keyword "}")
+                ((keyword "while" <*> operator "(") <*>> bexp_parser <<*> (operator ")" <*> operator "{"))
+            <*> (nr false <<*> operator "}")
             )
        )
    <|> ( hFunction @<< (
-                   (keyword "function" <*>> word)
-               <*> (match_list "(" ")" "," word <<*> keyword "{")
-               <*> (nr false <<*> keyword "}")
+                   (operator "function" <*>> word)
+               <*> (match_list "(" ")" "," word <<*> operator "{")
+               <*> (nr false <<*> operator "}")
                )
        )
-   <|> (LFakeInstrSkip *<< keyword "SKIP")
-   <|> (hAssign @<< (word <<*> keyword "=" <*> (
+   <|> (LFakeInstrSkip *<< operator "SKIP")
+   <|> (hAssign @<< (word <<*> operator "=" <*> (
              ptry (word <*> match_list "(" ")" "," aexp_parser)
          </> aexp_parser
        )))
@@ -153,6 +153,6 @@ let lFakeInstr_parser: parser (r:lFakeInstr) =
        (fun (s1, s2) -> match s2 with
                      | None    -> s1
                      | Some s2 -> LFakeInstrSeq s1 s2
-       ) @<< (no_rec tl <*> maybe (keyword ";" <*>> (match_comments <*>> h)))
+       ) @<< (no_rec tl <*> maybe (operator ";" <*>> h))//(match_comments <*>> h)))
      )
    in wrapspace (h' true ())

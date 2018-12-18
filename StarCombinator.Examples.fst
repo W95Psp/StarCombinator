@@ -69,10 +69,32 @@ let main1 () =
   mi_print_string (match calculator prog with
     | r -> r)
 
+
 let main2 () = 
   let prog = mi_input_line () in
-  mi_print_string (match (make lFakeInstr_parser) prog with
+  mi_print_string (match (make (match_list "(" ")" "," aexp_parser <<*> eof)) prog with
+    | Inl r -> String.concat ", " (List.map lAExpToString r)
+    | Inr r -> r)
+
+
+let main3 () = 
+  let prog = mi_input_line () in
+  mi_print_string (match (make ((
+               hFunction @<< (
+                   (keyword "function" <*>> word)
+               <*> (match_list "(" ")" "," word <<*> keyword "{")
+               <*> ((LFakeInstrSkip *<< number) <<*> keyword "}")
+               )) <<*> eof)) prog with
     | Inl r -> lFakeInstrToString r
     | Inr r -> r)
 
-let main = main2 ()
+
+let main4 () = 
+  let prog = mi_input_line () in
+  mi_print_string (match (make (lFakeInstr_parser <<*> eof)) prog with
+    | Inl r -> lFakeInstrToString r
+    | Inr r -> r)
+
+
+let main = main4 ()
+
