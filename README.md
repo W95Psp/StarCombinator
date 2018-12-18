@@ -31,3 +31,6 @@ let myParser (): parser int
 
 ## Examples
 The files `StarCombinator.Examples.fst` and `StarCombinator.Examples.While.fst` contains examples.
+
+## About MyIO
+This module is used only for debugging purposes (and for the examples). Using the normal IO module from FStar didn't worked for me (so this MyIO module is basically a copy paste).
