@@ -7,6 +7,10 @@ let (<$>) #ta #ra (f: ta -> ra) a: option ra = match a with | Some a -> Some (f 
 let (<*>) #ta #ra (f: option (ta -> ra)) (a: option ta): option ra = match f with | Some f -> f <$> a | None -> None 
 let max x y = if x > y then x else y
 
+let (@@) #a #b #c (f: b -> c) (g: a -> b) (v:a) = f (g v) 
+
+let ( |> ) (v:'a) (f: 'a -> 'b): 'b = f v
+let ( <| ) (f: 'a -> 'b) (v:'a): 'b = f v
 
 let rec lst_contains (#a:eqtype)  (x: a) (l: list a) = match l with
   | [] -> false | h::t -> x = h || lst_contains x t
