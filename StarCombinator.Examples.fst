@@ -10,7 +10,7 @@ open StarCombinator.Examples.While
 let op_add = (fun x y -> x + y)
 let op_minus = (fun x y -> x - y)
 
-let calculator_parser: parser int = 
+let calculator_parser: parser int =
     let rec h (_:unit): parser int = (
       //let g = number in
       let g = delayMe (admitP (() << ()); h) in
@@ -31,7 +31,7 @@ let calculator_parser: parser int =
     //       number
     //  <|> (keyword "Bonjour" <*>> number <<*> keywords ["X";"Y";"Z"])
     ) in (h ()) <<*> eof
-    
+
 let calculator source = match (make calculator_parser) source with
   | Inl intvalue -> "Got some result: " ^ string_of_int intvalue
   | Inr error -> "Got some error: " ^ error
@@ -51,45 +51,48 @@ let calculator source = match (make calculator_parser) source with
 //let delayMe #a (p: unit -> parser a): parser a = {description = (fun _ -> "x"); parser_fun = fun sd st0 -> let x = p () in x.parser_fun sd st0}
 
 let rec tiny' () = (
-  fp (fun (l, num) -> string_of_int num ^ "  " ^ String.concat " " (FStar.List.Tot.Base.map (fun (a,b) -> String.string_of_list [a;b]) l)) 
+  fp (fun (l, num) -> string_of_int num ^ "  " ^ String.concat " " (FStar.List.Tot.Base.map (fun (a,b) -> String.string_of_list [a;b]) l))
   (
     (many (exact_char 'c' <*> (exact_char '!' <|> exact_char 'a'))) <*> number// <<*> (admitP (() << ()); delayMe tiny')
   )
 )
 let tiny = make (tiny' ())
- 
-let main0 () = 
+
+let main0 () =
   let prog = mi_input_line () in
   mi_print_string (match tiny prog with
     | Inl x -> "Youpi:" ^ x
     | Inr x -> x)
-  
-let main1 () = 
+
+let main1 () =
   let prog = mi_input_line () in
   mi_print_string (match calculator prog with
     | r -> r)
 
 
-let main2 () = 
+let main2 () =
   let prog = mi_input_line () in
-  mi_print_string (match (make (match_list "(" ")" "," aexp_parser <<*> eof)) prog with
+  mi_print_string (match (make (match_list "("
+                                           ")"
+                                           (exact_char ',')
+                                           aexp_parser <<*> eof)) prog with
     | Inl r -> String.concat ", " (List.map lAExpToString r)
     | Inr r -> r)
 
 
-let main3 () = 
+let main3 () =
   let prog = mi_input_line () in
   mi_print_string (match (make ((
                hFunction @<< (
                    (keyword "function" <*>> word)
-               <*> (match_list "(" ")" "," word <<*> keyword "{")
+               <*> (match_list "(" ")" (exact_char ',') word <<*> keyword "{")
                <*> ((LFakeInstrSkip *<< number) <<*> keyword "}")
                )) <<*> eof)) prog with
     | Inl r -> lFakeInstrToString r
     | Inr r -> r)
 
 
-let main4 () = 
+let main4 () =
   let prog = mi_input_line () in
   mi_print_string (match (make (lFakeInstr_parser <<*> eof)) prog with
     | Inl r -> lFakeInstrToString r
@@ -97,4 +100,3 @@ let main4 () =
 
 
 let main = main4 ()
-

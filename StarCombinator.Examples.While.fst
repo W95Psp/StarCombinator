@@ -7,8 +7,8 @@ module L = FStar.List.Tot.Base
 type lAExp =
   | LAExpLitt : int -> lAExp
   | LAExpVar  : string -> lAExp
-  | LAExpPlus : lAExp  -> lAExp -> lAExp 
-  | LAExpMinus: lAExp  -> lAExp -> lAExp 
+  | LAExpPlus : lAExp  -> lAExp -> lAExp
+  | LAExpMinus: lAExp  -> lAExp -> lAExp
   | LAExpMult : lAExp  -> lAExp -> lAExp
   | LAExpDiv  : lAExp  -> lAExp -> lAExp
 type lBExp =
@@ -32,8 +32,8 @@ and funFakeDef = | FunFakeDef : string -> list string -> lFakeInstr -> funFakeDe
 let rec lAExpToString x = match x with
   | LAExpLitt  a   -> string_of_int a//int -> lAExp
   | LAExpVar   a   -> a//string -> lAExp
-  | LAExpPlus  a b -> "("^lAExpToString a ^ "+" ^ lAExpToString b^")"//lAExp  -> lAExp -> lAExp 
-  | LAExpMinus a b -> "("^lAExpToString a ^ "-" ^ lAExpToString b^")"//lAExp  -> lAExp -> lAExp 
+  | LAExpPlus  a b -> "("^lAExpToString a ^ "+" ^ lAExpToString b^")"//lAExp  -> lAExp -> lAExp
+  | LAExpMinus a b -> "("^lAExpToString a ^ "-" ^ lAExpToString b^")"//lAExp  -> lAExp -> lAExp
   | LAExpMult  a b -> "("^lAExpToString a ^ "*" ^ lAExpToString b^")"//lAExp  -> lAExp -> lAExp
   | LAExpDiv   a b -> "("^lAExpToString a ^ "/" ^ lAExpToString b^")"//lAExp  -> lAExp -> lAExp
 
@@ -72,7 +72,7 @@ let aexp_parser: parser lAExp =
           between_kwd "(" ")" (admitP (()<<()); delayMe h')
       <|> fp LAExpLitt number
       <|> fp LAExpVar word
-      
+
   and h' (): parser lAExp = admitP (() << ()); let h = delayMe h' in
       op_apply @<< (
             no_rec ()
@@ -80,7 +80,7 @@ let aexp_parser: parser lAExp =
                 (LAExpPlus *<< operator "+") <|> (LAExpMinus *<< operator "-")
             <|> (LAExpMult *<< operator "*") <|> (LAExpDiv *<< operator "/")
           ) <*> h)
-        )      
+        )
   in wrapspace (h' ())
 
 let bexp_parser: parser lBExp =
@@ -100,21 +100,21 @@ let bexp_parser: parser lBExp =
           ))
   in wrapspace (h' ())
 
-let rec lFakeInstrIsWF prog toplevel = match prog with 
-  | LFakeInstrSeq a b -> lFakeInstrIsWF a toplevel && lFakeInstrIsWF b toplevel 
-  | LFakeInstrIf  _ a b -> lFakeInstrIsWF a false && lFakeInstrIsWF b false 
+let rec lFakeInstrIsWF prog toplevel = match prog with
+  | LFakeInstrSeq a b -> lFakeInstrIsWF a toplevel && lFakeInstrIsWF b toplevel
+  | LFakeInstrIf  _ a b -> lFakeInstrIsWF a false && lFakeInstrIsWF b false
   | LFakeInstrWhile _ a -> lFakeInstrIsWF a false
-  | LFakeInstrFunDef (FunFakeDef _ _ a) -> if toplevel then lFakeInstrIsWF a false else false 
+  | LFakeInstrFunDef (FunFakeDef _ _ a) -> if toplevel then lFakeInstrIsWF a false else false
   | _ -> true
 
 type lFakeInstrWF = r:lFakeInstr {lFakeInstrIsWF r true}
 
-//let hAssignCall (var fName args = 
-//let hAssignExp (var, exp) = LFakeInstrAssign var (AssignLAExp exp) 
+//let hAssignCall (var fName args =
+//let hAssignExp (var, exp) = LFakeInstrAssign var (AssignLAExp exp)
 
 let hAssign (var, eith) = match eith with
     | Inl (fName, args) -> LFakeInstrAssign var (AssignCall fName args)
-    | Inr exp -> LFakeInstrAssign var (AssignLAExp exp) 
+    | Inr exp -> LFakeInstrAssign var (AssignLAExp exp)
 
 let match_comment: parser string = spaces <*>> operator "//" <*>> string_satisfy (fun x -> x <> '\n')
 let match_comments: parser (list string) = fp (fun x -> match x with | Some x -> x | None -> []) (maybe (many match_comment))

@@ -9,10 +9,10 @@ open StarCombinator.Helpers
 open MyIO
 
 private
-let remove_dups (#a:eqtype) (l:list a) = 
+let remove_dups (#a:eqtype) (l:list a) =
     let rec h l already: Tot (list a) (decreases l) = match l with
     | [] -> []
-    | hd::tl -> if lst_contains hd already then h tl already else hd::(h tl (hd::already)) 
+    | hd::tl -> if lst_contains hd already then h tl already else hd::(h tl (hd::already))
     in h l []
 
 
@@ -20,7 +20,7 @@ type map key value = list (key * list value)
 let get (#tk:eqtype) #tv (map:map tk tv) (key: tk): list tv =
   let rec h l = match l with | [] -> [] | (hd, lvals)::tl -> (if hd = key then lvals else h tl) in
   h map
-  
+
 let set (#tk:eqtype) (#tv:eqtype) (map:map tk tv) (key: tk) (value: tv) =
   let rec h l = match l with
                 | [] -> [(key, [value])]
@@ -30,20 +30,21 @@ let set (#tk:eqtype) (#tv:eqtype) (map:map tk tv) (key: tk) (value: tv) =
                                     )
   //let rec h l = match l with | [] -> [] | (hd, lvals)::tl -> (hd, (if hd = key then value::lvals else lvals))::tl
   in h map
-  
+
 let merge (#tk:eqtype) (#tv:eqtype) (map0:map tk tv) (map1:map tk tv) =
   let rec h l = match l with | [] -> map0 | (k,vl)::tl -> let map2 = h tl in L.fold_left (fun m v -> set m k v) map2 vl
   in h map1
 
 type parserState = {
     position: nat
-  ; maximum_position: nat
   ; errors: map (nat * nat) string
   ; source: string
+  ; maximum_position: n : nat{n <= String.length source}
   ; nest_level: nat
 }
-    
-let (+++) (s1 s2: parserState): (nat -> nat -> nat) -> parserState = fun f -> 
+
+val (+++) : s1 : parserState -> s2 : parserState{s1.source = s2.source} -> (nat -> nat -> nat) -> parserState
+let (+++) s1 s2 f =
                   { position = f s1.position s2.position
                   ; maximum_position = max s1.maximum_position s2.maximum_position
                   ; errors = merge s1.errors s2.errors
@@ -60,7 +61,7 @@ private
 let lift_to_continuation #i #o (f: i -> o) = ContinuationResult f
 
 private
-let ask_n #i #o (n': nat) (f: (l: list nat {L.length l == n'}) -> continuation i o): continuation i o = 
+let ask_n #i #o (n': nat) (f: (l: list nat {L.length l == n'}) -> continuation i o): continuation i o =
   let rec h (n: nat {n <> 0}) (acc: list nat {L.length acc == n' - n})
     = Continuation (
       fun r -> if n = 1
@@ -77,7 +78,7 @@ let cmp_cont #i #o0 #o9 (f0: continuation i o0) (f3: continuation o0 o9) =
   let rec h (f0: continuation i o0)
       = Continuation (fun seed -> match f0 with
                      | Continuation f1 -> h (admitP (seed << seed); f1 seed)
-                     | ContinuationResult f2 -> 
+                     | ContinuationResult f2 ->
                        let rec k (f3: continuation o0 o9) = (match f3 with
                          | Continuation f4 -> Continuation #i #o9 (fun seed -> (admitP (seed << seed); k (f4 seed)))
                          | ContinuationResult f5 -> ContinuationResult #i #o9 (f5 @@ f2)
@@ -87,7 +88,7 @@ let cmp_cont #i #o0 #o9 (f0: continuation i o0) (f3: continuation o0 o9) =
 let cmp_cont_par #a #i #j (f: continuation a i) (g: continuation a j): continuation a (i*j) =
   let rec h (f0: continuation a i) = match f0 with
                  | Continuation f1 -> Continuation (fun seed -> h (admit (); f1 seed))
-                 | ContinuationResult fr -> 
+                 | ContinuationResult fr ->
                    let h' (f1: continuation a j) = (match f1 with
                    | Continuation f2 -> Continuation (fun seed -> h (admit (); f2 seed))
                    | ContinuationResult fr' -> ContinuationResult (fun v -> (fr v, fr' v))
@@ -126,7 +127,7 @@ let p2fun #a (p: parser a): (parserState -> (parserState * option a)) = fun x ->
 
 //let p2fun a = fun x -> let x = mi_debug_print_string "Start" a.parser_fun (a.description ()) x
 
-let mktup2 a b = (a, b) 
+let mktup2 a b = (a, b)
 
 let fp #a #b (f: a -> b) (p:parser a): parser b
   = { description = p.description
@@ -139,12 +140,12 @@ let cat_d a b = fun _ -> {message = (a ()).message ^ (b ()).message}
 
 let mk_seq #a #b (parser1: parser a) (parser2: parser b): parser (a * b) = {
     description = (mk_d "sequence")//(fun _ -> "( " ^ parser2.description () ^ " . " ^ parser1.description () ^ " )")
-  ; random_generator = cmp_cont_par parser1.random_generator parser2.random_generator `cmp_cont` lift_to_continuation (fun (a, b) -> a ^ "; " ^ b) 
+  ; random_generator = cmp_cont_par parser1.random_generator parser2.random_generator `cmp_cont` lift_to_continuation (fun (a, b) -> a ^ "; " ^ b)
   ; parser_fun  = (let run sd (s0: parserState): (parserState*option (a * b)) = (
                      let (s1, r1) = p2fun parser1 s0 in
                      match r1 with
                      | None -> add_error s1 s0.position s1.position sd, None
-                     | Some r1 -> 
+                     | Some r1 ->
                        let (s2, r2) = p2fun parser2 s1 in
                        (let s3 = s1 +++ s2 <| (fun _ p2 -> p2) in (match r2 with
                        | None -> add_error s3 s0.position s2.position sd, None
@@ -156,7 +157,7 @@ let mk_seq #a #b (parser1: parser a) (parser2: parser b): parser (a * b) = {
 
 let choice_two #a #b (parser1: parser a) (parser2: parser b): parser (either a b) = {
     description = mk_d "or"//"( " ^ parser2.description () ^ " | " ^ parser1.description () ^ " )")
-  ; random_generator = ( 
+  ; random_generator = (
         ask_n 1 (fun [n] -> if n % 2 = 0
         then parser1.random_generator
         else parser2.random_generator))
@@ -185,7 +186,7 @@ let choice #a (lp: list (parser a) {~(lp == [])}): parser a = match lp with
 
 let maybe #a (p: parser a): parser (option a) = {
     description = mk_d "?" `cat_d` p.description
-  ; random_generator = ( 
+  ; random_generator = (
         ask_n 1 (fun [n] -> if n % 2 = 0
         then p.random_generator
         else lift_to_continuation (fun _ -> "")))
@@ -196,7 +197,7 @@ let maybe #a (p: parser a): parser (option a) = {
 
 let map_error #a (p: parser a) (msg: string): parser a = {
    description = mk_d msg
- ; random_generator = p.random_generator 
+ ; random_generator = p.random_generator
  ; parser_fun = p.parser_fun
 }
 
@@ -208,7 +209,7 @@ let delayMe #a (p: unit -> parser a): parser a
 
 let many #a (p: parser a): parser (list a) = {
     description = (mk_d "[" `cat_d` p.description `cat_d` mk_d "]")
-  ; random_generator = ( 
+  ; random_generator = (
         ask_n 1 (fun [n] -> let n = n % 8 in
         let rec h (n: nat)
           = if n = 0 then lift_to_continuation (fun _ -> "")
@@ -267,15 +268,16 @@ let ptry #a (p:parser a): parser a = {
                 in run)
 }
 
-let satisfy_char' (f: String.char -> bool) (g: nat -> String.char) = 
-  let d = "satisfy_char(some function)" in {
-    description = mk_d d
+let satisfy_char' (f: String.char -> bool) (g: nat -> String.char) =
+  let d = "satisfy_char(some function)" in
+  { description      = mk_d d
   ; random_generator = lask_n 1 (fun [x] -> fun () -> S.string_of_list [g x])
-  ; parser_fun = fun sd s0 -> let ch = S.get s0.source s0.position in if f ch
-                          then {s0 with position = s0.position + 1}, Some ch
-                          else add_error s0 s0.position (s0.position + 1) d, None 
+  ; parser_fun       = fun sd s0 -> let ch = S.index s0.source s0.position in
+                                 if f ch
+                                 then {s0 with position = s0.position + 1}, Some ch
+                                 else add_error s0 s0.position (s0.position + 1) d, None
   }
-  
+
 let satisfy_char (f: String.char -> bool) = satisfy_char' f (fun _ -> '?')
 
 let exact_char ch = satisfy_char' (fun ch' -> ch = ch') (fun _ -> ch)
@@ -296,7 +298,7 @@ let gt_errors ((p0, p1, _): (nat * nat * _)) ((p0', p1', _): (nat * nat * _)): b
   else if p1 = p1' then p0 > p0'
   else                  false)
 
-let sort_errors: list (nat * nat * string) -> list (nat * nat * string) 
+let sort_errors: list (nat * nat * string) -> list (nat * nat * string)
   = L.sortWith <| L.compare_of_bool gt_errors
 
 private
@@ -304,8 +306,10 @@ let count_in_list (#a:eqtype) (x: a) (l: list a):nat = L.fold_left (fun (acc:nat
 
 private
 let count_in_str ch (str: string) =
-    let rec h (p:nat) = if p = 0 then 0 else let p = p - 1 in
-                (if S.get str p = ch then 1 else 0) + h p
+    let rec h (p:nat{p <= S.length str}) = if p = 0
+                      then 0
+                      else let p = p - 1 in
+                           (if S.index str p = ch then 1 else 0) + h p
     in h <| S.length str
 
 let replaceCharStr all ch str = S.concat "" <| L.map (fun c -> if c = ch then str else S.string_of_list [c]) (S.list_of_string all)
@@ -328,16 +332,16 @@ let make p = fun (source: string) ->
                let src = s1.source in
                let err_len: nat = admit(); p1 - p0 in
                let err_len = if err_len = 0 then 1 else err_len in
-               let s_before = S.substring src 0 p0 in
-               let s_middle = S.substring src p0 err_len in
-               let s_after  = S.substring src <| p0+err_len <| S.length src - p0 - err_len in
+               let s_before = S.sub src 0 p0 in
+               let s_middle = S.sub src p0 err_len in
+               let s_after  = S.sub src <| p0+err_len <| S.length src - p0 - err_len in
                let errStyle = underline @@ fail in
                let ident = "" in
                let line_num = count_in_str '\n' s_before in
                "\n" ^ ident ^ fail "Parser error " ^ " on line "^ (underline <| string_of_int line_num) ^ " [pos:"^string_of_int p0^"-"^string_of_int p1^"]:" ^
                "\n" ^ ident ^ identLines (s_before ^ errStyle s_middle ^ s_after) ident ^
-               "\n" ^ ident ^ "Reason: " ^ msg 
+               "\n" ^ ident ^ "Reason: " ^ msg
 
              in
-             S.concat "\n" (L.map show l) 
+             S.concat "\n" (L.map show l)
            )

@@ -4,10 +4,10 @@ private
 let prefix = '\x1b'
 
 let (<$>) #ta #ra (f: ta -> ra) a: option ra = match a with | Some a -> Some (f a) | None -> None
-let (<*>) #ta #ra (f: option (ta -> ra)) (a: option ta): option ra = match f with | Some f -> f <$> a | None -> None 
+let (<*>) #ta #ra (f: option (ta -> ra)) (a: option ta): option ra = match f with | Some f -> f <$> a | None -> None
 let max x y = if x > y then x else y
 
-let (@@) #a #b #c (f: b -> c) (g: a -> b) (v:a) = f (g v) 
+let (@@) #a #b #c (f: b -> c) (g: a -> b) (v:a) = f (g v)
 
 let ( |> ) (v:'a) (f: 'a -> 'b): 'b = f v
 let ( <| ) (f: 'a -> 'b) (v:'a): 'b = f v
@@ -25,11 +25,11 @@ let cstENDC = "\x1b[0m"
 let cstBOLD = "\x1b[1m"
 let cstUNDERLINE = "\x1b[4m"
 
-let header str 		= cstHEADER	^ str ^ cstENDC
-let okblue str 		= cstOKBLUE	^ str ^ cstENDC
-let okgreen str 	= cstOKGREEN	^ str ^ cstENDC
-let warning str 	= cstWARNING	^ str ^ cstENDC
-let fail str 		= cstFAIL	^ str ^ cstENDC
-let bold str 		= cstBOLD	^ str ^ cstENDC
-let underline str 	= cstUNDERLINE	^ str ^ cstENDC
+let header str          = cstHEADER	^ str ^ cstENDC
+let okblue str          = cstOKBLUE	^ str ^ cstENDC
+let okgreen str         = cstOKGREEN	^ str ^ cstENDC
+let warning str         = cstWARNING	^ str ^ cstENDC
+let fail str            = cstFAIL	^ str ^ cstENDC
+let bold str            = cstBOLD	^ str ^ cstENDC
+let underline str       = cstUNDERLINE	^ str ^ cstENDC
 let line str            = str ^ "\n"
