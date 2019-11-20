@@ -58,20 +58,37 @@ let rec tiny' () = (
 )
 let tiny = make (tiny' ())
 
-let main0 () =
+val mi_line_non_empty : unit -> FStar.All.ML (option (s : string{String.length s > 0}))
+let mi_line_non_empty () =
   let prog = mi_input_line () in
+  if String.length prog > 0
+  then Some prog
+  else None
+
+
+let main0 () =
+  let prog = mi_line_non_empty () in
+  match prog with
+  | None -> ()
+  | Some prog ->
   mi_print_string (match tiny prog with
     | Inl x -> "Youpi:" ^ x
     | Inr x -> x)
 
 let main1 () =
-  let prog = mi_input_line () in
-  mi_print_string (match calculator prog with
-    | r -> r)
+  let prog = mi_line_non_empty () in
+  match prog with
+  | None -> ()
+  | Some prog ->
+    mi_print_string (match calculator prog with
+      | r -> r)
 
 
 let main2 () =
-  let prog = mi_input_line () in
+  let prog = mi_line_non_empty () in
+  match prog with
+  | None -> ()
+  | Some prog ->
   mi_print_string (match (make (match_list "("
                                            ")"
                                            (exact_char ',')
@@ -81,7 +98,10 @@ let main2 () =
 
 
 let main3 () =
-  let prog = mi_input_line () in
+  let prog = mi_line_non_empty () in
+  match prog with
+  | None -> ()
+  | Some prog ->
   mi_print_string (match (make ((
                hFunction @<< (
                    (keyword "function" <*>> word)
@@ -93,7 +113,10 @@ let main3 () =
 
 
 let main4 () =
-  let prog = mi_input_line () in
+  let prog = mi_line_non_empty () in
+  match prog with
+  | None -> ()
+  | Some prog ->
   mi_print_string (match (make (lFakeInstr_parser <<*> eof)) prog with
     | Inl r -> lFakeInstrToString r
     | Inr r -> r)
