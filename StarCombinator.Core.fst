@@ -35,23 +35,24 @@ let merge (#tk:eqtype) (#tv:eqtype) (map0:map tk tv) (map1:map tk tv) =
   let rec h l = match l with | [] -> map0 | (k,vl)::tl -> let map2 = h tl in L.fold_left (fun m v -> set m k v) map2 vl
   in h map1
 
+// a parserState whose position is exactly the length of the source is okay: it means that we're done
+// maximum_position keeps track of the most advanced position any parser have reached yet
 type parserState = {
     errors: map (nat * nat) string
   ; source: string
-  ; maximum_position: n : nat{n < String.length source}
+  ; maximum_position: n : nat{n <= String.length source}
   ; position: n : nat{n <= maximum_position}
   ; nest_level: nat
 }
 
-val (+++) : s1 : parserState -> s2 : parserState{s1.source = s2.source} -> (nat -> nat -> nat) -> parserState
-let (+++) s1 s2 f =
-                 // hack, remove later
-                  { position = min (max s1.maximum_position s2.maximum_position) (f s1.position s2.position)
-                  ; maximum_position = max s1.maximum_position s2.maximum_position
-                  ; errors = merge s1.errors s2.errors
-                  ; source = s1.source
-                  ; nest_level = s1.nest_level
-                  }
+let (+++) (s1: parserState) (s2: parserState{s1.source = s2.source})
+          (f: (a:nat) -> (b:nat) -> (r: nat {a = r \/ b = r}))
+          = { position = f s1.position s2.position
+            ; maximum_position = max s1.maximum_position s2.maximum_position
+            ; errors = merge s1.errors s2.errors
+            ; source = s1.source
+            ; nest_level = s1.nest_level
+            }
 
 
 noeq
@@ -282,14 +283,15 @@ let satisfy_char' (f: String.char -> bool) (g: nat -> String.char) =
   let d = "satisfy_char(some function)" in
   { description      = mk_d d
   ; random_generator = lask_n 1 (fun [x] -> fun () -> S.string_of_list [g x])
-  ; parser_fun       = fun sd s0 -> let ch = S.index s0.source s0.position in
-                                 if f ch then
-                                   (if s0.position + 1 >= s0.maximum_position then
-                                      add_error s0 s0.position (s0.position + 1) d, None
-                                   else
-                                     {s0 with position = s0.position + 1}, Some ch)
-                                 else add_error s0 s0.position (s0.position + 1) d, None
-}
+  ; parser_fun       = fun sd s0 -> if s0.position >= S.length s0.source
+                                 then add_error s0 (max 0 (s0.position - 1)) s0.position "satisfy_char: hit end of line", None
+                                 else (let ch = S.index s0.source s0.position in
+                                       if f ch
+                                       then let p = s0.position + 1 in
+                                         {s0 with position = p; maximum_position = max p s0.maximum_position}, Some ch
+                                       else add_error s0 s0.position (s0.position + 1) d, None
+                                      )
+  }
 
 let satisfy_char (f: String.char -> bool) = satisfy_char' f (fun _ -> '?')
 
