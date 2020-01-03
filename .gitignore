@@ -2,3 +2,5 @@ out
 *~
 \#*\#
 dep.graph
+result/
+_build/
