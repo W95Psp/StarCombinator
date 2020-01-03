@@ -1,7 +1,6 @@
 module StarCombinator.Core
 
-module LP = FStar.List.Pure.Base
-module L = FStar.List.Tot.Base
+module L = FStar.List.Tot
 module S = FStar.String
 
 open StarCombinator.Helpers
